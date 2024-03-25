@@ -43,9 +43,26 @@ export class AppComponent {
   question01() {
     function rand100(): string { // fonction utilitaire locale
       return Math.floor(Math.random() * 100).toString();
-
     }
-    // à compléter
+    // Définition du signal a
+    let a = signal<number>(0);
+    // Définition du signal b
+    let b = computed(() => tab(a(), () => rand100()));
+    // Définition de l'effet e
+    let e = effect(() => {
+      console.log("Question 1:");
+      console.log("a:", a());
+      console.log("b:", b());
+    });
+    // Faire varier la valeur de a de 1 à 3 par pas de 1
+    for (let i = 1; i <= 3; i++) {
+      this.ds.process(() => a.set(i));
+    }
+
+
+
+
+
   }
 
 
@@ -61,27 +78,57 @@ export class AppComponent {
    *     Q1.2) Dessinez le graphe des dépendances des signaux students, studentsWithAverage et bestStudent ainsi que de l'effet e.
   */
   question02() {
-    interface Student {
-      readonly name: string;
-      readonly marks: readonly number[];
-    }
+  // Définition des interfaces Student et StudentWithAverage
+interface Student {
+    readonly name: string;
+    readonly marks: readonly number[];
+}
 
-    interface StudentWithAverage extends Student {
-      readonly average: number; // moyenne des notes
-      readonly pass: boolean;   // true si la moyenne est >= 10
-    }
+interface StudentWithAverage extends Student {
+    readonly average: number; // moyenne des notes
+    readonly pass: boolean;   // true si la moyenne est >= 10
+}
 
-    const L: readonly Student[] = [
-      { name: "Alice", marks: [10, 12, 14] },
-      { name: "Bob", marks: [8, 9] },
-      { name: "Charlie", marks: [16, 18, 20] },
-      { name: "David", marks: [16, 18, 20, 12] },
-      { name: "Eve", marks: [16, 18, 20, 12, 10] },
-      { name: "Fred", marks: [16, 18, 20, 12, 10, 8] },
-      { name: "Gloria", marks: [6, 12, 2, 12, 10, 8, 6] },
-    ];
+// Initialisation du tableau L
+const L: readonly Student[] = [
+    { name: "Alice", marks: [10, 12, 14] },
+    { name: "Bob", marks: [8, 9] },
+    { name: "Charlie", marks: [16, 18, 20] },
+    { name: "David", marks: [16, 18, 20, 12] },
+    { name: "Eve", marks: [16, 18, 20, 12, 10] },
+    { name: "Fred", marks: [16, 18, 20, 12, 10, 8] },
+    { name: "Gloria", marks: [6, 12, 2, 12, 10, 8, 6] },
+];
 
-    // à compléter
+// Définition du signal students
+let students = signal<readonly Student[]>(L);
+
+// Définition du signal studentsWithAverage
+let studentsWithAverage = signal<readonly StudentWithAverage[]>([]);
+
+studentsWithAverage.update(() => {
+  return students().map(student => {
+    let average = student.marks.reduce((a, b) => a + b) / student.marks.length;
+    return { ...student, average, pass: average >= 10 };
+  }).sort((a, b) => b.average - a.average); // Tri par ordre de moyenne décroissante
+} );
+
+// Définition du signal bestStudent
+let bestStudent =
+(() => {
+  return studentsWithAverage()[0]; // Le meilleur élève est le premier du tableau trié
+});
+
+// Définition de l'effet e
+let e = effect(() => {
+    console.log("Question 2:");
+    console.log("Students:", students());
+    console.log("Students with average:", studentsWithAverage());
+    console.log("Best student:", bestStudent());
+});
+
+// Faire varier la valeur de students en ajoutant un élève à la fin du tableau
+students.update(students => [...students, { name: "Helen", marks: [10, 12, 14, 16] }]);
   }
 
 
@@ -176,14 +223,9 @@ export class AppComponent {
 
   }
 
-
-  /**
-   * Le constructeur sert uniquement à exécuter les fonctions répondants aux questions.
-   */
   constructor(private ds: DataService) {
     this.question01();
     this.question02();
     this.question03();
   }
-
 }
